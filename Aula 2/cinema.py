@@ -9,12 +9,13 @@ tipo_sala = {}
 
 class Filme:
 
-    def __init__(self, nome=None, data_estreia=None, data_saida=None, duracao=None):
-#        self.codigo
+    def __init__(self, codigo = None, nome=None, data_estreia=None, data_saida=None, duracao=None):
+        self.codigo = codigo
         self.nome = nome
         self.data_estreia = data_estreia
         self.data_saida = data_saida
-        self.duracao = duracao        
+        self.duracao = duracao
+        
 
 class Sala:
 
@@ -52,6 +53,12 @@ def cadastrar_valor_ingresso(tipo_sala_param, valor_ingresso):
 
     tipo_sala[tipo] = valor_ingresso
     return True
+
             
-    
+def cadastrar_filme(nome, data_estreia, data_saida, duracao):
+    num = len(filmes)
+    filme = Filme(num+1, nome, data_estreia, data_saida, duracao)
+    if (filme != None):
+        return filme
+    return None
 #metodos
