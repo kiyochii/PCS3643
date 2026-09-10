@@ -76,7 +76,8 @@ def cadastrar_sala(numero, capacidade, tipo_sala):
 def cadastrar_filme(nome, data_estreia, data_saida, duracao):
     num = len(filmes)
     filme = Filme(num+1, nome, data_estreia, data_saida, duracao)
-    if (filme != None):
+    if filme is not None:
+        filmes.append(filme)
         return filme
     return None
 

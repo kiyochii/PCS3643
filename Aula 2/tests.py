@@ -1,8 +1,17 @@
 import unittest
-from cinema import Filme, Sala, cadastrar_filme, filmes, salas
-
-from cinema import cadastrar_valor_ingresso, tipo_sala
-from cinema import cadastrar_sala
+from cinema import (
+    Filme,
+    Sala,
+    Sessao,
+    cadastrar_filme,
+    cadastrar_sala,
+    cadastrar_sessao,
+    cadastrar_valor_ingresso,
+    filmes,
+    salas,
+    sessoes,
+    tipo_sala,
+)
 
 
 class TestModelo(unittest.TestCase):
@@ -91,7 +100,53 @@ class TestUS03CadastrarSala(unittest.TestCase):
         self.assertIsNotNone(primeira)
         self.assertIsNotNone(segunda)
         self.assertEqual(len(salas), 2)
-        
+
+
+class TestUS04CadastrarSessao(unittest.TestCase):
+
+    def setUp(self):
+        filmes.clear()
+        salas.clear()
+        sessoes.clear()
+
+        self.sala = cadastrar_sala(1, 10, "2D")
+        self.filme = cadastrar_filme("Filme A", "2024-01-01", "2024-02-01", 120)
+
+    def test_cadastra_sessao_valida(self):
+        sessao = cadastrar_sessao(1, 1, "2024-03-10", 18)
+
+        self.assertIsInstance(sessao, Sessao)
+        self.assertEqual(sessao.sala.numero, 1)
+        self.assertEqual(sessao.filme.codigo, 1)
+        self.assertEqual(sessao.data, "2024-03-10")
+        self.assertEqual(sessao.hora_inicio, 18)
+        self.assertEqual(sessao.codigo, 1)
+        self.assertIn(sessao, sessoes)
+        self.assertEqual(len(sessao.assentos), self.sala.capacidade)
+        self.assertTrue(all(valor == 0 for valor in sessao.assentos.values()))
+
+    def test_rejeita_parametros_invalidos(self):
+        casos_invalidos = [
+            ("1", 1, "2024-03-10", 18),
+            (1, "1", "2024-03-10", 18),
+            (1, 1, 20240310, 18),
+            (1, 1, "2024-03-10", -1),
+            (1, 1, "2024-03-10", 25),
+            (99, 1, "2024-03-10", 18),
+            (1, 99, "2024-03-10", 18),
+        ]
+
+        for caso in casos_invalidos:
+            with self.subTest(caso=caso):
+                self.assertIsNone(cadastrar_sessao(*caso))
+
+    def test_rejeita_sessao_repetida_na_mesma_sala_data_e_hora(self):
+        primeira = cadastrar_sessao(1, 1, "2024-03-10", 18)
+        segunda = cadastrar_sessao(1, 1, "2024-03-10", 18)
+
+        self.assertIsNotNone(primeira)
+        self.assertIsNone(segunda)
+        self.assertEqual(len(sessoes), 1)
 
 
 if __name__ == '__main__':
