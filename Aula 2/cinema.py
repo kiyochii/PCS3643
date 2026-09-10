@@ -54,6 +54,24 @@ def cadastrar_valor_ingresso(tipo_sala_param, valor_ingresso):
     tipo_sala[tipo] = valor_ingresso
     return True
 
+
+def cadastrar_sala(numero, capacidade, tipo_sala):
+    if not isinstance(numero, int) or isinstance(numero, bool) or numero <= 0:
+        return None
+
+    if not isinstance(capacidade, int) or isinstance(capacidade, bool) or capacidade <= 0:
+        return None
+
+    if tipo_sala not in ("2D", "3D"):
+        return None
+
+    if any(sala.numero == numero for sala in salas):
+        return None
+
+    sala = Sala(numero, capacidade, tipo_sala)
+    salas.append(sala)
+    return sala
+
             
 def cadastrar_filme(nome, data_estreia, data_saida, duracao):
     num = len(filmes)

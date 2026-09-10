@@ -1,7 +1,8 @@
 import unittest
-from cinema import Filme, cadastrar_filme, filmes
+from cinema import Filme, Sala, cadastrar_filme, filmes, salas
 
 from cinema import cadastrar_valor_ingresso, tipo_sala
+from cinema import cadastrar_sala
 
 
 class TestModelo(unittest.TestCase):
@@ -42,6 +43,54 @@ class TestModelo(unittest.TestCase):
         self.assertFalse(cadastrar_valor_ingresso({}, 30))
         self.assertNotIn("4D", tipo_sala)
         self.assertNotIn("", tipo_sala)
+
+
+class TestUS03CadastrarSala(unittest.TestCase):
+
+    def setUp(self):
+        salas.clear()
+
+    def test_cadastra_sala_valida(self):
+        sala = cadastrar_sala(1, 100, "2D")
+
+        self.assertIsInstance(sala, Sala)
+        self.assertEqual(sala.numero, 1)
+        self.assertEqual(sala.capacidade, 100)
+        self.assertEqual(sala.tipo, "2D")
+        self.assertIn(sala, salas)
+
+    def test_rejeita_numero_zero_ou_negativo(self):
+        for numero in (0, -1):
+            with self.subTest(numero=numero):
+                self.assertIsNone(cadastrar_sala(numero, 100, "2D"))
+        self.assertEqual(salas, [])
+
+    def test_rejeita_capacidade_zero_ou_negativa(self):
+        for capacidade in (0, -1):
+            with self.subTest(capacidade=capacidade):
+                self.assertIsNone(cadastrar_sala(1, capacidade, "2D"))
+        self.assertEqual(salas, [])
+
+    def test_rejeita_tipo_de_sala_invalido(self):
+        self.assertIsNone(cadastrar_sala(1, 100, "4D"))
+        self.assertEqual(salas, [])
+
+    def test_rejeita_numero_de_sala_repetido(self):
+        primeira = cadastrar_sala(1, 100, "2D")
+        segunda = cadastrar_sala(1, 200, "3D")
+
+        self.assertIsNotNone(primeira)
+        self.assertIsNone(segunda)
+        self.assertEqual(len(salas), 1)
+        self.assertEqual(salas[0].capacidade, 100)
+
+    def test_permite_mesmo_tipo_em_numeros_diferentes(self):
+        primeira = cadastrar_sala(1, 100, "2D")
+        segunda = cadastrar_sala(2, 80, "2D")
+
+        self.assertIsNotNone(primeira)
+        self.assertIsNotNone(segunda)
+        self.assertEqual(len(salas), 2)
 
 
 if __name__ == '__main__':
