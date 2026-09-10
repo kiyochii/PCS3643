@@ -77,15 +77,86 @@ def cadastrar_sala(numero, capacidade, tipo_sala):
 def cadastrar_filme(nome, data_estreia, data_saida, duracao):
     num = len(filmes)
     filme = Filme(num+1, nome, data_estreia, data_saida, duracao)
-    if (filme != None):
+    if filme is not None:
+        filmes.append(filme)
         return filme
     return None
 
+#metodos
+def cadastrar_sessao(numero_sala, codigo_filme, data_sessao, hora_inicio):
+    # 1. Verificar os tipos dos parâmetros
+    if (
+        type(numero_sala) is not int
+        or type(codigo_filme) is not int
+        or type(hora_inicio) is not int
+        or not isinstance(data_sessao, str)
+    ):
+        return None
+
+    # 2. Verificar se a hora de início está entre 0 e 23
+    if hora_inicio < 0 or hora_inicio > 23:
+        return None
+
+    # 3. Buscar a sala pelo número
+    sala_encontrada = None
+    for sala in salas:
+        if sala.numero == numero_sala:
+            sala_encontrada = sala
+            break
+
+    if sala_encontrada is None:
+        return None
+
+    # 4. Buscar o filme pelo código
+    filme_encontrado = None
+    for filme in filmes:
+        if filme.codigo == codigo_filme:
+            filme_encontrado = filme
+            break
+
+    if filme_encontrado is None:
+        return None
+
+    # 5. Verificar se já existe uma sessão na mesma sala, data e hora de início
+    for sessao in sessoes:
+        if (
+            sessao.sala.numero == numero_sala
+            and sessao.data == data_sessao
+            and sessao.hora_inicio == hora_inicio
+        ):
+            return None
+
+    # 6. Criar o objeto da sessão
+    nova_sessao = Sessao(
+        sala_encontrada,
+        filme_encontrado,
+        data_sessao,
+        hora_inicio
+    )
+
+    # 7. Gerar um código sequencial para a sessão, começando em 1
+    nova_sessao.codigo = max(
+        (sessao.codigo for sessao in sessoes),
+        default=0
+    ) + 1
+
+    # 8. Numerar os assentos de 1 até a capacidade da sala e inicializá-los com 0
+    nova_sessao.assentos = {}
+    for numero in range(1, sala_encontrada.capacidade + 1):
+        nova_sessao.assentos[numero] = 0
+
+    # 9. Adicionar a sessão à lista e retornar o objeto criado
+    sessoes.append(nova_sessao)
+    return nova_sessao
+
+
+# US05
 def _data_valida(data):
     try:
         return datetime.strptime(data, "%d/%m/%Y")
     except (ValueError, TypeError):
         return None
+
 
 def listar_filmes_por_data(data):
     data_validada = _data_valida(data)
