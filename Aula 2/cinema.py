@@ -1,3 +1,4 @@
+
 ###listas
 filmes = []
 salas = []
@@ -30,6 +31,27 @@ class Sessao:
         self.data = data
         self.hora_inicio = hora_inicio
 #        self.assentos
+
+
+def cadastrar_valor_ingresso(tipo_sala_param, valor_ingresso):
+    if not isinstance(tipo_sala_param, dict):
+        return False
+
+    tipo = tipo_sala_param.get("tipo")
+    if not isinstance(tipo, str):
+        return False
+
+    if tipo not in ("2D", "3D"):
+        return False
+
+    if not isinstance(valor_ingresso, int) or isinstance(valor_ingresso, bool):
+        return False
+
+    if valor_ingresso <= 0:
+        return False
+
+    tipo_sala[tipo] = valor_ingresso
+    return True
             
     
 #metodos
