@@ -471,9 +471,5 @@ class TestUS06ComprarIngressos(unittest.TestCase):
         self.assertEqual(self.sessao.assentos, estado_antes)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 if __name__ == '__main__':
     unittest.main()
