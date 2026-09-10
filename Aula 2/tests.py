@@ -91,6 +91,7 @@ class TestUS03CadastrarSala(unittest.TestCase):
         self.assertIsNotNone(primeira)
         self.assertIsNotNone(segunda)
         self.assertEqual(len(salas), 2)
+        
 
 
 if __name__ == '__main__':
