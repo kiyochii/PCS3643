@@ -178,3 +178,57 @@ def listar_filmes_por_data(data):
     if not linhas:
         return "Nenhum filme no dia escolhido."
     return "\n".join(linhas)
+
+
+def comprarIngressos(codigo_sessao, assentos, tipos_ingresso):
+    sessao = None
+    for item in sessoes:
+        if item.codigo == codigo_sessao:
+            sessao = item
+            break
+
+    if sessao is None:
+        return 0
+
+    if not isinstance(assentos, list) or not isinstance(tipos_ingresso, list):
+        return 0
+
+    if not assentos or not tipos_ingresso:
+        return 0
+
+    if len(assentos) != len(tipos_ingresso):
+        return 0
+
+    capacidade = sessao.sala.capacidade
+    for assento in assentos:
+        if not isinstance(assento, int) or isinstance(assento, bool):
+            return 0
+        if assento <= 0 or assento > capacidade:
+            return 0
+        if assento in sessao.assentos and sessao.assentos[assento] != 0:
+            return 0
+
+    if len(set(assentos)) != len(assentos):
+        return 0
+
+    for tipo in tipos_ingresso:
+        if not isinstance(tipo, int) or isinstance(tipo, bool):
+            return 0
+        if tipo not in (0, 1):
+            return 0
+
+    valor_unitario = tipo_sala.get(sessao.sala.tipo)
+    if valor_unitario is None or valor_unitario <= 0:
+        return 0
+
+    total = 0
+    for assento, tipo in zip(assentos, tipos_ingresso):
+        if tipo == 0:
+            total += valor_unitario
+        else:
+            total += valor_unitario / 2
+
+    for assento in assentos:
+        sessao.assentos[assento] = 1
+
+    return total

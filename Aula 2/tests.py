@@ -1,21 +1,23 @@
 import unittest
+
 from cinema import (
     Filme,
     Sala,
     Sessao,
+    comprarIngressos,
     cadastrar_filme,
     cadastrar_sala,
     cadastrar_sessao,
     cadastrar_valor_ingresso,
-    listar_filmes_por_data,
     filmes,
+    listar_filmes_por_data,
     salas,
     sessoes,
     tipo_sala,
 )
 
 
-class TestModelo(unittest.TestCase):
+class TestUS02CadastrarValorIngresso(unittest.TestCase):
 
     def setUp(self):
         tipo_sala.clear()
@@ -26,18 +28,6 @@ class TestModelo(unittest.TestCase):
 
         self.assertTrue(cadastrar_valor_ingresso({"tipo": "3D"}, 50))
         self.assertEqual(tipo_sala["3D"], 50)
-        
-    def test_cadastrar_filme(self):
-        codigo_esperado = len(filmes) + 1
-
-        filme = cadastrar_filme("Teste", "2002/09/13", "2005/10/21", 60)
-
-        self.assertIsInstance(filme, Filme)
-        self.assertEqual(filme.codigo, codigo_esperado)
-        self.assertEqual(filme.nome, "Teste")
-        self.assertEqual(filme.data_estreia, "2002/09/13")
-        self.assertEqual(filme.data_saida, "2005/10/21")
-        self.assertEqual(filme.duracao, 60)
 
     def test_nao_cadastra_valor_zero_ou_negativo(self):
         for valor in (0, -10):
@@ -257,6 +247,232 @@ class TestUS05ListarFilmesPorData(unittest.TestCase):
 
         self.assertTrue(linhas[0].endswith("50 reais."))
         self.assertTrue(linhas[1].endswith("40 reais."))
+
+
+class TestUS06ComprarIngressos(unittest.TestCase):
+
+    def setUp(self):
+        filmes.clear()
+        salas.clear()
+        sessoes.clear()
+        tipo_sala.clear()
+
+        tipo_sala["2D"] = 40
+        self.filme = cadastrar_filme("Filme A", "01/01/2026", "31/12/2026", 120)
+        self.sala = cadastrar_sala(1, 5, "2D")
+        self.sessao = cadastrar_sessao(self.sala.numero, self.filme.codigo, "10/09/2026", 14)
+
+    def test_compra_ingresso_inteiro(self):
+        valor = comprarIngressos(self.sessao.codigo, [1], [0])
+
+        self.assertEqual(valor, 40)
+        self.assertEqual(self.sessao.assentos[1], 1)
+
+    def test_compra_ingresso_meia(self):
+        valor = comprarIngressos(self.sessao.codigo, [2], [1])
+
+        self.assertEqual(valor, 20)
+        self.assertEqual(self.sessao.assentos[2], 1)
+
+    def test_compra_varios_ingressos(self):
+        valor = comprarIngressos(self.sessao.codigo, [1, 2, 3], [0, 1, 0])
+
+        self.assertEqual(valor, 100)
+        self.assertEqual(self.sessao.assentos[1], 1)
+        self.assertEqual(self.sessao.assentos[2], 1)
+        self.assertEqual(self.sessao.assentos[3], 1)
+
+    def test_assento_e_tipo_sao_associados_pela_mesma_posicao(self):
+        valor = comprarIngressos(self.sessao.codigo, [2, 4], [0, 1])
+
+        self.assertEqual(valor, 60)
+        self.assertEqual(self.sessao.assentos[2], 1)
+        self.assertEqual(self.sessao.assentos[4], 1)
+
+    def test_rejeita_sessao_inexistente(self):
+        self.assertEqual(comprarIngressos(999, [1], [0]), 0)
+
+    def test_rejeita_lista_de_assentos_vazia(self):
+        self.assertEqual(comprarIngressos(self.sessao.codigo, [], []), 0)
+
+    def test_rejeita_listas_de_tamanhos_diferentes(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [1, 2], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_zero(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [0], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_acima_da_capacidade(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [6], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_ja_ocupado(self):
+        self.sessao.assentos[2] = 1
+        estado_antes = self.sessao.assentos.copy()
+
+        valor = comprarIngressos(self.sessao.codigo, [2], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_tipo_de_ingresso_invalido(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [1], [2])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_repetido(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [2, 2], [0, 1])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_compra_e_atomica(self):
+        self.sessao.assentos[2] = 1
+        estado_antes = self.sessao.assentos.copy()
+
+        valor = comprarIngressos(self.sessao.codigo, [1, 2], [0, 0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_nao_altera_assentos_em_compra_invalida(self):
+        self.sessao.assentos[2] = 1
+        estado_antes = self.sessao.assentos.copy()
+
+        valor = comprarIngressos(self.sessao.codigo, [1, 2], [0, 0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class TestUS06ComprarIngressos(unittest.TestCase):
+
+    def setUp(self):
+        filmes.clear()
+        salas.clear()
+        sessoes.clear()
+        tipo_sala.clear()
+
+        tipo_sala["2D"] = 40
+        self.filme = cadastrar_filme("Filme A", "01/01/2026", "31/12/2026", 120)
+        self.sala = cadastrar_sala(1, 5, "2D")
+        self.sessao = cadastrar_sessao(self.sala.numero, self.filme.codigo, "10/09/2026", 14)
+
+    def test_compra_ingresso_inteiro(self):
+        valor = comprarIngressos(self.sessao.codigo, [1], [0])
+
+        self.assertEqual(valor, 40)
+        self.assertEqual(self.sessao.assentos[1], 1)
+
+    def test_compra_ingresso_meia(self):
+        valor = comprarIngressos(self.sessao.codigo, [2], [1])
+
+        self.assertEqual(valor, 20)
+        self.assertEqual(self.sessao.assentos[2], 1)
+
+    def test_compra_varios_ingressos(self):
+        valor = comprarIngressos(self.sessao.codigo, [1, 2, 3], [0, 1, 0])
+
+        self.assertEqual(valor, 100)
+        self.assertEqual(self.sessao.assentos[1], 1)
+        self.assertEqual(self.sessao.assentos[2], 1)
+        self.assertEqual(self.sessao.assentos[3], 1)
+
+    def test_assento_e_tipo_sao_associados_pela_mesma_posicao(self):
+        valor = comprarIngressos(self.sessao.codigo, [2, 4], [0, 1])
+
+        self.assertEqual(valor, 60)
+        self.assertEqual(self.sessao.assentos[2], 1)
+        self.assertEqual(self.sessao.assentos[4], 1)
+
+    def test_rejeita_sessao_inexistente(self):
+        self.assertEqual(comprarIngressos(999, [1], [0]), 0)
+
+    def test_rejeita_lista_de_assentos_vazia(self):
+        self.assertEqual(comprarIngressos(self.sessao.codigo, [], []), 0)
+
+    def test_rejeita_listas_de_tamanhos_diferentes(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [1, 2], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_zero(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [0], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_acima_da_capacidade(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [6], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_ja_ocupado(self):
+        self.sessao.assentos[2] = 1
+        estado_antes = self.sessao.assentos.copy()
+
+        valor = comprarIngressos(self.sessao.codigo, [2], [0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_tipo_de_ingresso_invalido(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [1], [2])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_rejeita_assento_repetido(self):
+        estado_antes = self.sessao.assentos.copy()
+        valor = comprarIngressos(self.sessao.codigo, [2, 2], [0, 1])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_compra_e_atomica(self):
+        self.sessao.assentos[2] = 1
+        estado_antes = self.sessao.assentos.copy()
+
+        valor = comprarIngressos(self.sessao.codigo, [1, 2], [0, 0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+    def test_nao_altera_assentos_em_compra_invalida(self):
+        self.sessao.assentos[2] = 1
+        estado_antes = self.sessao.assentos.copy()
+
+        valor = comprarIngressos(self.sessao.codigo, [1, 2], [0, 0])
+
+        self.assertEqual(valor, 0)
+        self.assertEqual(self.sessao.assentos, estado_antes)
+
+
+if __name__ == "__main__":
+    unittest.main()
 
 
 if __name__ == '__main__':
