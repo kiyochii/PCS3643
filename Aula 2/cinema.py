@@ -1,10 +1,10 @@
 ###listas
-#filmes
-#salas
-#sessoes
+filmes = []
+salas = []
+sessoes = []
 
 ###dictionary
-#tipo_sala
+tipo_sala = {}
 
 class Filme:
 
@@ -13,7 +13,7 @@ class Filme:
         self.nome = nome
         self.data_estreia = data_estreia
         self.data_saida = data_saida
-        self.duracao = duracao
+        self.duracao = duracao        
 
 class Sala:
 
@@ -30,5 +30,6 @@ class Sessao:
         self.data = data
         self.hora_inicio = hora_inicio
 #        self.assentos
-
+            
+    
 #metodos
