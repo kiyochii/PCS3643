@@ -1,3 +1,4 @@
+from datetime import datetime
 
 ###listas
 filmes = []
@@ -79,4 +80,30 @@ def cadastrar_filme(nome, data_estreia, data_saida, duracao):
     if (filme != None):
         return filme
     return None
-#metodos
+
+def _data_valida(data):
+    try:
+        return datetime.strptime(data, "%d/%m/%Y")
+    except (ValueError, TypeError):
+        return None
+
+def listar_filmes_por_data(data):
+    data_validada = _data_valida(data)
+    if data_validada is None:
+        return "Data inválida."
+
+    linhas = []
+    for sessao in sorted(sessoes, key=lambda s: s.codigo):
+        if _data_valida(sessao.data) != data_validada:
+            continue
+        if 0 not in sessao.assentos.values():
+            continue
+
+        valor = tipo_sala[sessao.sala.tipo]
+        linhas.append(
+            f"{sessao.codigo}: {sessao.filme.nome}, sala {sessao.sala.numero} ({sessao.sala.tipo}), {sessao.hora_inicio}h, {valor} reais."
+        )
+
+    if not linhas:
+        return "Nenhum filme no dia escolhido."
+    return "\n".join(linhas)

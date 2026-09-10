@@ -3,6 +3,7 @@ from cinema import Filme, Sala, cadastrar_filme, filmes, salas
 
 from cinema import cadastrar_valor_ingresso, tipo_sala
 from cinema import cadastrar_sala
+from cinema import Sessao, sessoes, listar_filmes_por_data
 
 
 class TestModelo(unittest.TestCase):
@@ -91,6 +92,115 @@ class TestUS03CadastrarSala(unittest.TestCase):
         self.assertIsNotNone(primeira)
         self.assertIsNotNone(segunda)
         self.assertEqual(len(salas), 2)
+
+
+class TestUS05ListarFilmesPorData(unittest.TestCase):
+
+    def setUp(self):
+        filmes.clear()
+        salas.clear()
+        sessoes.clear()
+        tipo_sala.clear()
+
+        tipo_sala["2D"] = 40
+        tipo_sala["3D"] = 50
+
+        self.king_kong = Filme(1, "King Kong", "01/01/2026", "31/12/2026", 120)
+        self.star_wars = Filme(2, "Star Wars", "01/01/2026", "31/12/2026", 130)
+        filmes.extend([self.king_kong, self.star_wars])
+
+        self.sala_3d = cadastrar_sala(1, 3, "3D")
+        self.sala_2d = cadastrar_sala(2, 3, "2D")
+
+    def _nova_sessao(self, codigo, sala, filme, data, hora, ocupados=()):
+        sessao = Sessao(sala, filme, data, hora)
+        sessao.codigo = codigo
+        sessao.assentos = {
+            numero: (1 if numero in ocupados else 0)
+            for numero in range(1, sala.capacidade + 1)
+        }
+        sessoes.append(sessao)
+        return sessao
+
+    def test_retorna_data_invalida_para_formato_incorreto(self):
+        for data in ("2026-09-12", "12-09-2026", "12/09", ""):
+            with self.subTest(data=data):
+                self.assertEqual(listar_filmes_por_data(data), "Data inválida.")
+
+    def test_retorna_data_invalida_para_data_inexistente(self):
+        self.assertEqual(listar_filmes_por_data("31/02/2026"), "Data inválida.")
+
+    def test_retorna_mensagem_sem_sessoes(self):
+        self.assertEqual(
+            listar_filmes_por_data("12/09/2026"),
+            "Nenhum filme no dia escolhido.",
+        )
+
+    def test_lista_sessao_com_assento_livre(self):
+        self._nova_sessao(1, self.sala_3d, self.king_kong, "12/09/2026", 12, ocupados=(2,))
+
+        resultado = listar_filmes_por_data("12/09/2026")
+
+        for trecho in ("1:", "King Kong", "sala 1", "(3D)", "12h", "50 reais."):
+            self.assertIn(trecho, resultado)
+
+    def test_nao_lista_sessao_com_todos_assentos_ocupados(self):
+        self._nova_sessao(
+            1, self.sala_3d, self.king_kong, "12/09/2026", 12, ocupados=(1, 2, 3)
+        )
+
+        self.assertEqual(
+            listar_filmes_por_data("12/09/2026"),
+            "Nenhum filme no dia escolhido.",
+        )
+
+    def test_lista_varias_sessoes_do_mesmo_filme(self):
+        self._nova_sessao(1, self.sala_3d, self.king_kong, "12/09/2026", 12)
+        self._nova_sessao(2, self.sala_3d, self.king_kong, "12/09/2026", 20)
+
+        resultado = listar_filmes_por_data("12/09/2026")
+
+        self.assertEqual(len(resultado.split("\n")), 2)
+        self.assertIn("1: King Kong", resultado)
+        self.assertIn("2: King Kong", resultado)
+
+    def test_nao_lista_sessoes_de_outra_data(self):
+        self._nova_sessao(1, self.sala_3d, self.king_kong, "13/09/2026", 12)
+
+        self.assertEqual(
+            listar_filmes_por_data("12/09/2026"),
+            "Nenhum filme no dia escolhido.",
+        )
+
+    def test_formata_linha_exatamente(self):
+        self._nova_sessao(1, self.sala_3d, self.king_kong, "12/09/2026", 12)
+
+        self.assertEqual(
+            listar_filmes_por_data("12/09/2026"),
+            "1: King Kong, sala 1 (3D), 12h, 50 reais.",
+        )
+
+    def test_lista_sessoes_em_ordem_de_codigo(self):
+        # cadastradas fora de ordem de propósito
+        self._nova_sessao(2, self.sala_2d, self.star_wars, "12/09/2026", 13)
+        self._nova_sessao(1, self.sala_3d, self.king_kong, "12/09/2026", 12)
+
+        resultado = listar_filmes_por_data("12/09/2026")
+
+        self.assertEqual(
+            resultado,
+            "1: King Kong, sala 1 (3D), 12h, 50 reais.\n"
+            "2: Star Wars, sala 2 (2D), 13h, 40 reais.",
+        )
+
+    def test_usa_preco_de_acordo_com_tipo_da_sala(self):
+        self._nova_sessao(1, self.sala_3d, self.king_kong, "12/09/2026", 12)
+        self._nova_sessao(2, self.sala_2d, self.star_wars, "12/09/2026", 13)
+
+        linhas = listar_filmes_por_data("12/09/2026").split("\n")
+
+        self.assertTrue(linhas[0].endswith("50 reais."))
+        self.assertTrue(linhas[1].endswith("40 reais."))
 
 
 if __name__ == '__main__':
