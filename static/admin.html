@@ -104,7 +104,9 @@
             <label>Data de saída<input name="data_saida" type="date" required></label>
           </div>
           <label>Duração (minutos)<input name="duracao" type="number" min="1" step="1" placeholder="120" required></label>
-          <label>URL do cartaz <span class="optional">opcional</span><input name="cartaz_url" type="url" placeholder="https://exemplo.com/cartaz.jpg"></label>
+          <label>URL do cartaz <span class="optional">opcional</span><input name="cartaz_url" type="text" inputmode="url" placeholder="https://exemplo.com/cartaz.jpg"></label>
+          <label>Enviar cartaz <span class="optional">opcional</span><input name="cartaz_arquivo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="cartaz-hint"></label>
+          <p id="cartaz-hint" class="helper">JPEG, PNG ou WebP, até 5 MB e 25 megapixels. O arquivo enviado substitui o cartaz atual ou a URL informada.</p>
           <div class="form-actions"><button class="button primary" type="submit">Salvar filme</button><button class="button ghost cancel-edit" type="button" hidden>Cancelar edição</button></div>
         </form>
         <div class="data-card"><div class="card-header"><div><h3>Filmes cadastrados</h3><p id="movies-count">0 filmes</p></div></div><div id="movies-list" class="entity-list"></div></div>

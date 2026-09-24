@@ -1,5 +1,8 @@
 import json
+import sqlite3
+from contextlib import closing
 from pathlib import Path
+from uuid import uuid4
 
 import cinema
 
@@ -17,10 +20,7 @@ def _to_plain(obj):
 
 
 def init_db():
-    import sqlite3
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
+    with closing(sqlite3.connect(DB_PATH)) as conn, conn:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS app_state (
@@ -29,29 +29,23 @@ def init_db():
             )
             """
         )
-        conn.commit()
-        conn.close()
-        return DB_PATH
-    except sqlite3.DatabaseError:
-        if DB_PATH.exists():
-            DB_PATH.unlink()
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS app_state (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
-            )
-            """
+        _init_cartazes(conn)
+    return DB_PATH
+
+
+def _init_cartazes(conn):
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cartazes (
+            id TEXT PRIMARY KEY,
+            conteudo BLOB NOT NULL,
+            tipo TEXT NOT NULL
         )
-        conn.commit()
-        conn.close()
-        return DB_PATH
+        """
+    )
 
 
-def save_state():
-    import sqlite3
-
+def _save_state(conn):
     payload = {
         "filmes": _to_plain(cinema.filmes),
         "salas": _to_plain(cinema.salas),
@@ -59,30 +53,51 @@ def save_state():
         "tipo_sala": cinema.tipo_sala,
     }
 
-    conn = sqlite3.connect(DB_PATH)
     conn.execute(
         "INSERT INTO app_state(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         ("cinema_state", json.dumps(payload, ensure_ascii=False)),
     )
-    conn.commit()
-    conn.close()
+    urls = {filme.cartaz_url for filme in cinema.filmes}
+    unused = [(row[0],) for row in conn.execute("SELECT id FROM cartazes")
+              if f"/cinema/cartazes/{row[0]}" not in urls]
+    conn.executemany("DELETE FROM cartazes WHERE id = ?", unused)
+
+
+def save_state():
+    with closing(sqlite3.connect(DB_PATH)) as conn, conn:
+        _save_state(conn)
+
+
+def save_cartaz(filme, conteudo, tipo):
+    """Grava a imagem e sua associação ao filme na mesma transação."""
+    cartaz_id = uuid4().hex
+    previous_url = filme.cartaz_url
+    try:
+        with closing(sqlite3.connect(DB_PATH)) as conn, conn:
+            conn.execute(
+                "INSERT INTO cartazes(id, conteudo, tipo) VALUES (?, ?, ?)",
+                (cartaz_id, conteudo, tipo),
+            )
+            filme.cartaz_url = f"/cinema/cartazes/{cartaz_id}"
+            _save_state(conn)
+    except Exception:
+        filme.cartaz_url = previous_url
+        raise
+
+
+def load_cartaz(cartaz_id):
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        return conn.execute(
+            "SELECT conteudo, tipo FROM cartazes WHERE id = ?", (cartaz_id,)
+        ).fetchone()
 
 
 def load_state():
-    import sqlite3
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
+    with closing(sqlite3.connect(DB_PATH)) as conn:
         row = conn.execute(
             "SELECT value FROM app_state WHERE key = ?",
             ("cinema_state",),
         ).fetchone()
-        conn.close()
-    except sqlite3.DatabaseError:
-        if DB_PATH.exists():
-            DB_PATH.unlink()
-        init_db()
-        return False
 
     if row is None:
         return False

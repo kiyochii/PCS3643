@@ -38,10 +38,10 @@ No diretório do projeto, crie um ambiente virtual e instale as dependências:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install fastapi uvicorn httpx2
+python3 -m pip install -r requirements.txt
 ```
 
-`httpx2` é usado apenas pelo cliente de testes de integração do FastAPI.
+`httpx2` é usado pelo cliente de testes de integração do FastAPI. `python-multipart` permite receber arquivos, e `Pillow` valida o conteúdo das imagens.
 
 No Windows PowerShell, a ativação do ambiente é feita com:
 
@@ -84,6 +84,8 @@ As rotas de negócio usam o prefixo `/cinema`.
 | `PUT` | `/cinema/filmes/update/{codigo_filme}` | `Filme` | Atualiza um filme. |
 | `DELETE` | `/cinema/filmes/{codigo_filme}` | — | Remove um filme. |
 | `GET` | `/cinema/filmes` | — | Lista os filmes. |
+| `POST` | `/cinema/filmes/{codigo_filme}/cartaz` | `multipart/form-data`, campo `arquivo` | Envia ou substitui o cartaz de um filme. |
+| `GET` | `/cinema/cartazes/{cartaz_id}` | — | Retorna a imagem armazenada no SQLite. |
 | `GET` | `/cinema/filmes/data/{data}` | — | Lista sessões disponíveis na data informada. |
 | `POST` | `/cinema/sessoes` | `Sessao` | Cadastra uma sessão. |
 | `PUT` | `/cinema/sessoes/update/{codigo_sessao}` | `Sessao` | Atualiza uma sessão. |
@@ -126,7 +128,16 @@ As rotas de negócio usam o prefixo `/cinema`.
 }
 ```
 
-O campo `cartaz_url` é opcional e aceita URLs HTTP ou HTTPS.
+O campo `cartaz_url` é opcional e aceita URLs HTTP/HTTPS ou o caminho `/cinema/cartazes/{cartaz_id}` retornado por um upload.
+
+Para enviar uma imagem, cadastre o filme e envie o arquivo usando o código retornado:
+
+```bash
+curl -X POST http://localhost:8000/cinema/filmes/1/cartaz \
+  -F "arquivo=@/caminho/para/cartaz.png"
+```
+
+São aceitas imagens JPEG, PNG e WebP de até 5 MB e 25 megapixels. A API valida o conteúdo real do arquivo e retorna o filme com seu `cartaz_url`. O painel administrativo faz essas duas requisições ao salvar um filme com arquivo selecionado. Se o upload falhar, o filme permanece salvo e o formulário permite tentar novamente sem duplicá-lo.
 
 `Sessao`:
 
@@ -172,11 +183,14 @@ O campo `cartaz_url` é opcional e aceita URLs HTTP ou HTTPS.
 
 Na inicialização, a aplicação cria `cinema.db`, caso necessário, e carrega dele o último estado salvo. Toda operação de criação, atualização, remoção ou compra feita pela API salva o estado automaticamente. O endpoint `POST /persist` permite solicitar essa gravação manualmente.
 
+Os arquivos de cartaz ficam na tabela `cartazes`, como dados binários (BLOB). A imagem e sua referência no filme são salvas na mesma transação, permanecendo disponíveis após recarregar a página ou reiniciar o servidor. Cartazes sem vínculo com filmes são removidos ao persistir alterações. A tabela é criada automaticamente em bancos existentes; URLs externas continuam funcionando, mas suas imagens não são copiadas para o banco.
+
 ## Painel administrativo
 
 O painel em `/admin` consome os mesmos endpoints REST e não exige autenticação. Por ele é possível:
 
 - cadastrar, editar e excluir valores, salas, filmes e sessões;
+- enviar um arquivo de cartaz no cadastro ou na edição do filme, ou informar uma URL;
 - visualizar os totais e a ocupação das sessões;
 - vender ingressos inteiros ou de meia-entrada por assento;
 - cancelar ingressos e liberar assentos ocupados;
@@ -192,4 +206,4 @@ Execute a suíte de testes unitários a partir da raiz do projeto:
 python3 -m unittest -v
 ```
 
-Os testes cobrem cadastro e validação de valores, salas e sessões, consulta por data, compra e cancelamento de ingressos.
+Os testes cobrem cadastro e validação de valores, salas e sessões, consulta por data, compra e cancelamento de ingressos, além de envio, substituição e exclusão de cartazes, rejeição de arquivos inválidos, persistência após reinício e reversão em caso de falha na gravação. Os testes de integração usam um banco temporário, sem alterar o banco da aplicação.

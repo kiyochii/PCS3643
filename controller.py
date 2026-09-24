@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, HttpUrl
+from io import BytesIO
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, Response, UploadFile
+from PIL import Image, UnidentifiedImageError
+from pydantic import BaseModel, Field, HttpUrl
 
 import cinema
 from cinema import (
@@ -19,9 +23,13 @@ from cinema import (
     remover_valor_ingresso as remover_valor_ingresso_fn,
     removerIngressos,
 )
-from database import save_state
+from database import load_cartaz, save_cartaz, save_state
 
 router = APIRouter(prefix="/cinema", tags=["cinema"])
+MAX_CARTAZ_BYTES = 5 * 1024 * 1024
+MAX_CARTAZ_PIXELS = 25_000_000
+CARTAZ_TYPES = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
+CartazLocal = Annotated[str, Field(pattern=r"^/cinema/cartazes/[0-9a-f]{32}$")]
 
 
 class ValorIngressoInput(BaseModel):
@@ -41,7 +49,7 @@ class FilmeInput(BaseModel):
     data_estreia: str
     data_saida: str
     duracao: int
-    cartaz_url: HttpUrl | None = None
+    cartaz_url: HttpUrl | CartazLocal | None = None
 
 
 class SessaoInput(BaseModel):
@@ -194,6 +202,48 @@ def remover_filme_endpoint(codigo_filme: int):
         raise HTTPException(status_code=404, detail="Filme não encontrado.")
 
     return _persist_and_return({"codigo_filme": codigo_filme})
+
+
+@router.post("/filmes/{codigo_filme}/cartaz")
+def enviar_cartaz(codigo_filme: int, arquivo: UploadFile = File(...)):
+    filme = cinema.pegar_filme(codigo_filme)
+    if filme is None:
+        raise HTTPException(status_code=404, detail="Filme não encontrado.")
+
+    conteudo = arquivo.file.read(MAX_CARTAZ_BYTES + 1)
+    if len(conteudo) > MAX_CARTAZ_BYTES:
+        raise HTTPException(status_code=413, detail="O cartaz deve ter no máximo 5 MB.")
+    if not conteudo:
+        raise HTTPException(status_code=400, detail="O arquivo do cartaz está vazio.")
+
+    try:
+        with Image.open(BytesIO(conteudo)) as imagem:
+            tipo = CARTAZ_TYPES.get(imagem.format)
+            if tipo is None:
+                raise HTTPException(status_code=415, detail="Envie um cartaz JPEG, PNG ou WebP.")
+            if imagem.width * imagem.height > MAX_CARTAZ_PIXELS:
+                raise HTTPException(status_code=413, detail="O cartaz deve ter no máximo 25 megapixels.")
+            imagem.verify()
+        # A decodificação também detecta imagens truncadas que têm um cabeçalho válido.
+        with Image.open(BytesIO(conteudo)) as imagem:
+            imagem.load()
+    except Image.DecompressionBombError:
+        raise HTTPException(status_code=413, detail="As dimensões do cartaz são muito grandes.")
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        raise HTTPException(status_code=415, detail="O arquivo enviado não é uma imagem válida.")
+
+    save_cartaz(filme, conteudo, tipo)
+    return {"success": True, "filme": _serializar_filme(filme)}
+
+
+@router.get("/cartazes/{cartaz_id}")
+def obter_cartaz(cartaz_id: str):
+    cartaz = load_cartaz(cartaz_id)
+    if cartaz is None:
+        raise HTTPException(status_code=404, detail="Cartaz não encontrado.")
+    conteudo, tipo = cartaz
+    return Response(content=conteudo, media_type=tipo,
+                    headers={"X-Content-Type-Options": "nosniff"})
 
 
 @router.post("/sessoes")

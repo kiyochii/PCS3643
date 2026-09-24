@@ -23,7 +23,7 @@ function renderMovies() {
     const card = element('article', undefined, 'movie');
     const fallback = () => element('div', 'Cartaz indisponível', 'poster poster-placeholder');
     let poster = fallback();
-    if (film.cartaz_url && /^https?:\/\//i.test(film.cartaz_url)) {
+    if (film.cartaz_url && (/^https?:\/\//i.test(film.cartaz_url) || /^\/cinema\/cartazes\/[0-9a-f]{32}$/.test(film.cartaz_url))) {
       poster = element('img', undefined, 'poster');
       poster.alt = `Cartaz de ${film.nome}`;
       poster.loading = 'lazy';
