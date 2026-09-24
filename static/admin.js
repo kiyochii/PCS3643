@@ -63,7 +63,7 @@ async function api(path, options = {}) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15000);
   const config = { cache: 'no-store', ...options, signal: controller.signal };
-  if (config.body) config.headers = { 'Content-Type': 'application/json', ...config.headers };
+  if (config.body && !(config.body instanceof FormData)) config.headers = { 'Content-Type': 'application/json', ...config.headers };
 
   try {
     const response = await fetch(path, config);
@@ -173,7 +173,7 @@ function renderRooms() {
 }
 
 function safePoster(film) {
-  if (film.cartaz_url && /^https?:\/\//i.test(film.cartaz_url)) {
+  if (film.cartaz_url && (/^https?:\/\//i.test(film.cartaz_url) || /^\/cinema\/cartazes\/[0-9a-f]{32}$/.test(film.cartaz_url))) {
     const image = node('img', undefined, 'entity-poster');
     image.src = film.cartaz_url;
     image.alt = '';
@@ -454,16 +454,38 @@ $('#movie-form').addEventListener('submit', event => {
   event.preventDefault();
   const form = event.currentTarget;
   const code = form.elements.codigo.value;
+  const poster = form.elements.cartaz_arquivo.files[0];
+  if (poster && poster.size > 5 * 1024 * 1024) {
+    toast('O cartaz deve ter no máximo 5 MB.', 'error');
+    return;
+  }
   const payload = {
     nome: form.elements.nome.value.trim(),
     data_estreia: toApiDate(form.elements.data_estreia.value),
     data_saida: toApiDate(form.elements.data_saida.value),
     duracao: Number(form.elements.duracao.value),
-    cartaz_url: form.elements.cartaz_url.value.trim() || null,
+    cartaz_url: poster ? null : form.elements.cartaz_url.value.trim() || null,
   };
   submitMutation(
     form,
-    () => api(code ? `/cinema/filmes/update/${code}` : '/cinema/filmes', { method: code ? 'PUT' : 'POST', body: JSON.stringify(payload) }),
+    async () => {
+      const result = await api(code ? `/cinema/filmes/update/${code}` : '/cinema/filmes', { method: code ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+      // Se o envio falhar, uma nova tentativa atualiza este filme sem duplicá-lo.
+      form.elements.codigo.value = result.filme.codigo;
+      form.elements.cartaz_url.value = result.filme.cartaz_url || '';
+      $('#movie-form-title').textContent = `Editar ${result.filme.nome}`;
+      $('.cancel-edit', form).hidden = false;
+      if (poster) {
+        const data = new FormData();
+        data.append('arquivo', poster);
+        try {
+          await api(`/cinema/filmes/${result.filme.codigo}/cartaz`, { method: 'POST', body: data });
+        } catch (error) {
+          await loadData({ quiet: true });
+          throw new Error(`O filme foi salvo, mas o cartaz não foi enviado. ${error.message}`);
+        }
+      }
+    },
     code ? 'Filme atualizado.' : 'Filme cadastrado.',
     resetMovieForm,
   );
@@ -589,6 +611,7 @@ document.addEventListener('click', async event => {
     form.elements.data_saida.value = toInputDate(film.data_saida);
     form.elements.duracao.value = film.duracao;
     form.elements.cartaz_url.value = film.cartaz_url || '';
+    form.elements.cartaz_arquivo.value = '';
     $('#movie-form-title').textContent = `Editar ${film.nome}`;
     $('.cancel-edit', form).hidden = false;
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
