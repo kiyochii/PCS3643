@@ -8,12 +8,13 @@ tipo_sala = {}
 
 class Filme:
 
-    def __init__(self, codigo=None, nome=None, data_estreia=None, data_saida=None, duracao=None):
+    def __init__(self, codigo=None, nome=None, data_estreia=None, data_saida=None, duracao=None, cartaz_url=None):
         self.codigo = codigo
         self.nome = nome
         self.data_estreia = data_estreia
         self.data_saida = data_saida
         self.duracao = duracao
+        self.cartaz_url = cartaz_url
 
 
 class Sala:
@@ -157,7 +158,7 @@ def cadastrar_sala(numero, capacidade, tipo_sala_param):
     return sala
 
 
-def cadastrar_filme(nome, data_estreia, data_saida, duracao):
+def cadastrar_filme(nome, data_estreia, data_saida, duracao, cartaz_url=None):
     if not isinstance(nome, str) or not nome.strip():
         return None
 
@@ -180,12 +181,12 @@ def cadastrar_filme(nome, data_estreia, data_saida, duracao):
     data_saida_padrao = data_fim.strftime("%d-%m-%Y")
 
     codigo = len(filmes) + 1
-    filme = Filme(codigo, nome_limpo, data_estreia_padrao, data_saida_padrao, duracao)
+    filme = Filme(codigo, nome_limpo, data_estreia_padrao, data_saida_padrao, duracao, cartaz_url)
     filmes.append(filme)
     return filme
 
 
-def atualizar_filme(codigo_filme, nome=None, data_estreia=None, data_saida=None, duracao=None):
+def atualizar_filme(codigo_filme, nome=None, data_estreia=None, data_saida=None, duracao=None, cartaz_url=None):
     filme = pegar_filme(codigo_filme)
     if filme is None:
         return None
@@ -219,6 +220,8 @@ def atualizar_filme(codigo_filme, nome=None, data_estreia=None, data_saida=None,
     filme.data_estreia = data_inicio.strftime("%d-%m-%Y")
     filme.data_saida = data_fim.strftime("%d-%m-%Y")
     filme.duracao = nova_duracao
+    if cartaz_url is not None:
+        filme.cartaz_url = cartaz_url
     return filme
 
 

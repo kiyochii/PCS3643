@@ -104,6 +104,7 @@ def load_state():
             item.get("data_estreia"),
             item.get("data_saida"),
             item.get("duracao"),
+            item.get("cartaz_url"),
         )
         filme.codigo = item.get("codigo")
         cinema.filmes.append(filme)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 import cinema
 from cinema import (
@@ -41,6 +41,7 @@ class FilmeInput(BaseModel):
     data_estreia: str
     data_saida: str
     duracao: int
+    cartaz_url: HttpUrl | None = None
 
 
 class SessaoInput(BaseModel):
@@ -72,6 +73,7 @@ def _serializar_filme(filme):
         "data_estreia": filme.data_estreia,
         "data_saida": filme.data_saida,
         "duracao": filme.duracao,
+        "cartaz_url": filme.cartaz_url,
     }
 
 
@@ -161,6 +163,7 @@ def cadastrar_filme_endpoint(payload: FilmeInput):
         payload.data_estreia,
         payload.data_saida,
         payload.duracao,
+        str(payload.cartaz_url) if payload.cartaz_url else None,
     )
     if filme is None:
         raise HTTPException(status_code=400, detail="Filme inválido.")
@@ -176,6 +179,7 @@ def atualizar_filme_endpoint(codigo_filme: int, payload: FilmeInput):
         payload.data_estreia,
         payload.data_saida,
         payload.duracao,
+        str(payload.cartaz_url) if payload.cartaz_url else None,
     )
     if filme is None:
         raise HTTPException(status_code=400, detail="Filme inválido para atualização.")
@@ -254,6 +258,14 @@ def listar_salas():
 @router.get("/valor-ingresso")
 def listar_valores():
     return {"tipo_sala": cinema.tipo_sala}
+
+
+@router.get("/tipos-ingresso")
+def listar_tipos_ingresso():
+    return {"tipos_ingresso": [
+        {"codigo": 0, "nome": "Inteira", "fator": 1},
+        {"codigo": 1, "nome": "Meia-entrada", "fator": 0.5},
+    ]}
 
 
 @router.post("/sessoes/{codigo_sessao}/ingressos")

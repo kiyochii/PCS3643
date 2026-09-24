@@ -62,3 +62,49 @@ Todos os endpoints ficam sob o prefixo:
 - A aplicação salva tudo em um único banco SQLite: `cinema.db`.
 - O Swagger fica em `/docs` e pode ser usado para testar os endpoints no navegador.
 - A data deve seguir o formato `dd-mm-aaaa`.
+
+## 5. Tela única: Programação do cinema
+
+Abra http://localhost:8000/ após iniciar o servidor. A interface usa HTML,
+CSS e JavaScript, servidos pelo próprio FastAPI, sem etapa de build.
+
+Organização da tela:
+
+- Cabeçalho e filtros: busca por nome e data da sessão, limpar e atualizar.
+- Área principal: filmes com cartaz, nome, duração, período de exibição e
+  sessões com data, horário, sala, formato e quantidade de lugares livres.
+- Área lateral: todas as salas, suas capacidades e formatos; tipos de ingresso
+  (inteira e meia-entrada) e preços por formato de sala.
+- Em celulares, as informações laterais ficam abaixo dos filmes.
+
+Todos os dados são consultados via `fetch` nos endpoints REST existentes e no
+novo `GET /cinema/tipos-ingresso`. A página é de consulta, sem fluxo de compra
+ou telas de cadastro. Os cadastros existentes continuam disponíveis em `/docs`.
+
+### Cartazes
+
+Os endpoints POST e PUT de filmes aceitam o campo opcional `cartaz_url`
+com uma URL HTTP ou HTTPS da imagem. Ele é devolvido nas consultas e persistido
+no SQLite. Exemplo de corpo (substitua a URL pela imagem real do filme):
+
+```json
+{
+  "nome": "Meu filme",
+  "data_estreia": "01-09-2026",
+  "data_saida": "30-09-2026",
+  "duracao": 120,
+  "cartaz_url": "https://example.com/cartaz.jpg"
+}
+```
+
+Registros antigos continuam funcionando. Quando não há URL ou a imagem não
+carrega, a tela mostra “Cartaz indisponível”. Não são inseridos dados fictícios
+no banco. Cadastre filmes, salas, valores e sessões pela API para preencher a tela.
+
+### Verificação
+
+```bash
+python3 -m unittest tests test_programacao
+```
+
+Os testes da API exigem também `pip install httpx` e usam um banco temporário.
