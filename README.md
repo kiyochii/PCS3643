@@ -1,5 +1,7 @@
 # Cinema API
 
+[![Status do workflow](https://github.com/henri/PCS3643/actions/workflows/testes.yml/badge.svg)](https://github.com/henri/PCS3643/actions/workflows/testes.yml)
+
 API REST para gerenciar valores de ingresso, salas, filmes, sessões e vendas de ingressos de um cinema. O projeto usa FastAPI, mantém o estado em memória durante a execução e o persiste em um banco SQLite.
 
 ## Tecnologias
@@ -9,26 +11,22 @@ API REST para gerenciar valores de ingresso, salas, filmes, sessões e vendas de
 - Uvicorn
 - SQLite
 - `unittest`
+- `httpx` (para os testes de API com TestClient)
 
 ## Estrutura do projeto
 
 ```text
 .
-├── main.py             # cria a aplicação, inicializa o banco e expõe as telas
-├── controller.py       # modelos de entrada e endpoints REST
-├── cinema.py           # entidades e regras de negócio
-├── database.py         # persistência do estado em SQLite
-├── static/
-│   ├── index.html      # programação pública
-│   ├── app.js          # integração da programação com a API
-│   ├── style.css       # estilos da programação
-│   ├── admin.html      # painel administrativo
-│   ├── admin.js        # operações administrativas pela API
-│   └── admin.css       # estilos do painel administrativo
-├── tests.py            # testes unitários das regras de negócio
-├── test_programacao.py # testes de integração das telas e da API
-├── cinema.db           # banco SQLite da aplicação
-└── Aula 2/             # materiais e versão anterior da atividade
+├── main.py                 # cria a aplicação, inicializa o banco e expõe rotas gerais
+├── controller.py           # modelos de entrada e endpoints REST
+├── cinema.py               # entidades e regras de negócio
+├── database.py             # persistência do estado em SQLite
+├── tests.py                # testes unitários das regras de negócio
+├── test_programacao.py     # testes de integração da programação e do armazenamento em SQLite
+├── .github/workflows/      # workflows de automação do GitHub Actions
+├── cinema.db               # banco SQLite da aplicação
+├── env/                    # ambiente virtual do projeto
+└── Aula 2/                 # materiais e versão anterior da atividade
 ```
 
 ## Instalação
@@ -36,9 +34,10 @@ API REST para gerenciar valores de ingresso, salas, filmes, sessões e vendas de
 No diretório do projeto, crie um ambiente virtual e instale as dependências:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install fastapi uvicorn httpx2
+python3 -m venv env
+source env/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install fastapi uvicorn httpx
 ```
 
 `httpx2` é usado apenas pelo cliente de testes de integração do FastAPI.
@@ -46,7 +45,7 @@ python3 -m pip install fastapi uvicorn httpx2
 No Windows PowerShell, a ativação do ambiente é feita com:
 
 ```powershell
-.venv\Scripts\Activate.ps1
+.\env\Scripts\Activate.ps1
 ```
 
 ## Execução
@@ -186,10 +185,27 @@ Como solicitado, esta versão não implementa login nem controle de acesso. Em u
 
 ## Testes
 
-Execute a suíte de testes unitários a partir da raiz do projeto:
+Execute a suíte de testes a partir da raiz do projeto:
 
 ```bash
-python3 -m unittest -v
+python3 -m unittest discover -s . -p "test*.py"
 ```
 
-Os testes cobrem cadastro e validação de valores, salas e sessões, consulta por data, compra e cancelamento de ingressos.
+Se estiver usando o ambiente virtual do projeto, o comando equivalente é:
+
+```bash
+./env/bin/python -m unittest discover -s . -p "test*.py"
+```
+
+Os testes cobrem cadastro e validação de valores, salas e sessões, consulta por data, compra e cancelamento de ingressos, além da verificação da programação e do estado persistido em SQLite.
+
+## GitHub Actions / CI
+
+O projeto possui um workflow para rodar os testes automaticamente em cada push e pull request. O arquivo está em [.github/workflows/testes.yml](.github/workflows/testes.yml) e executa a suíte com:
+
+```yaml
+- name: Rodando os testes
+  run: python -m unittest discover -s . -p "test*.py"
+```
+
+A instalação do ambiente de CI inclui também a dependência do `httpx`, necessária para os testes de API via `TestClient`.
