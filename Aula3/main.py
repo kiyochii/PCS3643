@@ -6,7 +6,7 @@ import sqlite3
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-import cinema
+from models import Conflito, NaoEncontrado
 from controllers import router
 from database import criar_tabelas
 
@@ -26,13 +26,13 @@ def pagina_inicial():
     return RedirectResponse(url="/docs")
 
 
-@app.exception_handler(cinema.NaoEncontrado)
-async def nao_encontrado(request: Request, erro: cinema.NaoEncontrado):
+@app.exception_handler(NaoEncontrado)
+async def nao_encontrado(request: Request, erro: NaoEncontrado):
     return JSONResponse(status_code=404, content={"detail": str(erro)})
 
 
-@app.exception_handler(cinema.Conflito)
-async def conflito(request: Request, erro: cinema.Conflito):
+@app.exception_handler(Conflito)
+async def conflito(request: Request, erro: Conflito):
     return JSONResponse(status_code=409, content={"detail": str(erro)})
 
 
