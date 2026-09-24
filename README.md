@@ -1,17 +1,18 @@
 # Cinema API
 
-[![Status do workflow](https://github.com/henri/PCS3643/actions/workflows/testes.yml/badge.svg)](https://github.com/henri/PCS3643/actions/workflows/testes.yml)
+[![Status do workflow](https://github.com/kiyochii/PCS3643/actions/workflows/testes.yml/badge.svg)](https://github.com/kiyochii/PCS3643/actions/workflows/testes.yml)
 
 API REST para gerenciar valores de ingresso, salas, filmes, sessões e vendas de ingressos de um cinema. O projeto usa FastAPI, mantém o estado em memória durante a execução e o persiste em um banco SQLite.
 
 ## Tecnologias
 
-- Python 3.10 ou superior
+- Python 3.10 ou superior (o CI executa em 3.12)
 - FastAPI
 - Uvicorn
 - SQLite
-- `unittest`
-- `httpx` (para os testes de API com TestClient)
+- `unittest` e `unittest.mock`
+- `requests` (cliente HTTP usado nos testes dos endpoints)
+- `httpx2` (exigido pelo `TestClient` do Starlette)
 
 ## Estrutura do projeto
 
@@ -21,12 +22,13 @@ API REST para gerenciar valores de ingresso, salas, filmes, sessões e vendas de
 ├── controller.py           # modelos de entrada e endpoints REST
 ├── cinema.py               # entidades e regras de negócio
 ├── database.py             # persistência do estado em SQLite
+├── static/                 # front-end: programação pública e painel administrativo
 ├── tests.py                # testes unitários das regras de negócio
+├── test_api.py             # testes dos endpoints REST com unittest.mock
 ├── test_programacao.py     # testes de integração da programação e do armazenamento em SQLite
+├── requirements.txt        # dependências da aplicação e dos testes
 ├── .github/workflows/      # workflows de automação do GitHub Actions
-├── cinema.db               # banco SQLite da aplicação
-├── env/                    # ambiente virtual do projeto
-└── Aula 2/                 # materiais e versão anterior da atividade
+└── cinema.db               # banco SQLite da aplicação
 ```
 
 ## Instalação
@@ -34,12 +36,12 @@ API REST para gerenciar valores de ingresso, salas, filmes, sessões e vendas de
 No diretório do projeto, crie um ambiente virtual e instale as dependências:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv env
+source env/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-`httpx2` é usado pelo cliente de testes de integração do FastAPI. `python-multipart` permite receber arquivos, e `Pillow` valida o conteúdo das imagens.
+`requests` é usado pelos testes dos endpoints. `httpx2` é exigido pelo `TestClient`, cliente de testes de integração do FastAPI. `python-multipart` permite receber arquivos, e `Pillow` valida o conteúdo das imagens.
 
 No Windows PowerShell, a ativação do ambiente é feita com:
 
@@ -90,7 +92,7 @@ As rotas de negócio usam o prefixo `/cinema`.
 | `DELETE` | `/cinema/sessoes/{codigo_sessao}` | — | Remove uma sessão. |
 | `GET` | `/cinema/sessoes` | — | Lista as sessões e seus assentos. |
 | `POST` | `/cinema/sessoes/{codigo_sessao}/ingressos` | `CompraIngressos` | Compra ingressos e ocupa os assentos. |
-| `DELETE` | `/cinema/sessoes/{codigo_sessao}/ingressos` | `RemocaoIngressos` | Cancela ingressos e libera os assentos. |
+| `DELETE` | `/cinema/sessoes/{codigo_sessao}/ingressos` | `RemoverIngressos` | Cancela ingressos e libera os assentos. |
 | `POST` | `/persist` | — | Força a gravação do estado atual no banco. |
 
 ### Formatos dos corpos JSON
@@ -157,7 +159,7 @@ São aceitas imagens JPEG, PNG e WebP de até 5 MB e 25 megapixels. A API valida
 }
 ```
 
-`RemocaoIngressos`:
+`RemoverIngressos`:
 
 ```json
 {
@@ -210,7 +212,13 @@ Se estiver usando o ambiente virtual do projeto, o comando equivalente é:
 ./env/bin/python -m unittest discover -s . -p "test*.py"
 ```
 
-Os testes cobrem cadastro e validação de valores, salas e sessões, consulta por data, compra e cancelamento de ingressos, além da verificação da programação e do estado persistido em SQLite.
+A suíte tem 68 testes, distribuídos em três arquivos:
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `tests.py` | 37 | Regras de negócio de `cinema.py`: validação de valores, salas, filmes e sessões, consulta por data, compra e cancelamento de ingressos. |
+| `test_api.py` | 21 | Os endpoints REST, um teste por rota. Usa `unittest.mock` para substituir `requests`, verificando a URL e o corpo enviados e o JSON devolvido, sem precisar do servidor no ar. |
+| `test_programacao.py` | 10 | Integração via `TestClient`: telas de programação e administração, envio, substituição e exclusão de cartazes, rejeição de arquivos inválidos, persistência após reinício e reversão em caso de falha na gravação. Usa um banco temporário, sem alterar `cinema.db`. |
 
 ## GitHub Actions / CI
 
@@ -218,7 +226,7 @@ O projeto possui um workflow para rodar os testes automaticamente em cada push e
 
 ```yaml
 - name: Rodando os testes
-  run: python -m unittest discover -s . -p "test*.py"
+  run: python -m unittest discover -s . -p "test*.py" -v
 ```
 
-Os testes cobrem cadastro e validação de valores, salas e sessões, consulta por data, compra e cancelamento de ingressos, além de envio, substituição e exclusão de cartazes, rejeição de arquivos inválidos, persistência após reinício e reversão em caso de falha na gravação. Os testes de integração usam um banco temporário, sem alterar o banco da aplicação.
+As dependências vêm de `requirements.txt`, e o badge no topo deste README reflete o resultado da última execução.
