@@ -40,6 +40,16 @@ class TestProgramacao(unittest.TestCase):
         types = self.client.get('/cinema/tipos-ingresso').json()['tipos_ingresso']
         self.assertEqual([(t['codigo'], t['fator']) for t in types], [(0, 1), (1, 0.5)])
 
+    def test_painel_administrativo_e_recursos(self):
+        response = self.client.get('/admin')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Painel administrativo', response.text)
+        for form_id in ('price-form', 'room-form', 'movie-form', 'session-form', 'ticket-form'):
+            self.assertIn(f'id="{form_id}"', response.text)
+        for path in ('/static/admin.js', '/static/admin.css'):
+            self.assertEqual(self.client.get(path).status_code, 200)
+
     def test_cartaz_persistido_e_sessao(self):
         payload = dict(nome='Filme teste', data_estreia='01-09-2026',
                        data_saida='30-09-2026', duracao=120,

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Painel administrativo do cinema">
+  <title>Administração | Cinema</title>
+  <link rel="stylesheet" href="/static/admin.css">
+  <script src="/static/admin.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/admin" aria-label="Painel do Cinema">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <span>CINEMA<small>ADMINISTRAÇÃO</small></span>
+    </a>
+
+    <nav aria-label="Navegação principal">
+      <a href="#visao-geral" class="nav-link active"><span aria-hidden="true">▦</span> Visão geral</a>
+      <a href="#valores" class="nav-link"><span aria-hidden="true">R$</span> Valores</a>
+      <a href="#salas" class="nav-link"><span aria-hidden="true">▣</span> Salas</a>
+      <a href="#filmes" class="nav-link"><span aria-hidden="true">▷</span> Filmes</a>
+      <a href="#sessoes" class="nav-link"><span aria-hidden="true">◷</span> Sessões</a>
+      <a href="#ingressos" class="nav-link"><span aria-hidden="true">◉</span> Ingressos</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p><span class="status-dot"></span> API conectada</p>
+      <a href="/" target="_blank" rel="noopener">Ver programação <span aria-hidden="true">↗</span></a>
+      <a href="/docs" target="_blank" rel="noopener">Documentação da API <span aria-hidden="true">↗</span></a>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">OPERAÇÃO DO CINEMA</p>
+        <h1>Painel administrativo</h1>
+      </div>
+      <div class="topbar-actions">
+        <span id="sync-status" class="sync-status" role="status" aria-live="polite">Sincronizando…</span>
+        <button id="refresh" class="button secondary" type="button">↻ Atualizar dados</button>
+      </div>
+    </header>
+
+    <noscript>Este painel precisa de JavaScript para acessar a API.</noscript>
+
+    <section id="visao-geral" class="page-section overview" aria-labelledby="overview-title">
+      <div class="section-title">
+        <div><p class="eyebrow">RESUMO</p><h2 id="overview-title">Visão geral</h2></div>
+        <p id="last-update" class="helper">Carregando dados…</p>
+      </div>
+      <div class="stats">
+        <article class="stat-card"><span class="stat-icon gold" aria-hidden="true">▷</span><div><strong id="stat-filmes">—</strong><span>Filmes cadastrados</span></div></article>
+        <article class="stat-card"><span class="stat-icon blue" aria-hidden="true">▣</span><div><strong id="stat-salas">—</strong><span>Salas ativas</span></div></article>
+        <article class="stat-card"><span class="stat-icon violet" aria-hidden="true">◷</span><div><strong id="stat-sessoes">—</strong><span>Sessões programadas</span></div></article>
+        <article class="stat-card"><span class="stat-icon green" aria-hidden="true">◉</span><div><strong id="stat-ocupacao">—</strong><span>Ingressos vendidos</span></div></article>
+      </div>
+    </section>
+
+    <section id="valores" class="page-section" aria-labelledby="prices-title">
+      <div class="section-title">
+        <div><p class="eyebrow">CONFIGURAÇÃO</p><h2 id="prices-title">Valores de ingresso</h2></div>
+        <p class="helper">Defina o valor da inteira para cada formato. A meia-entrada é calculada automaticamente.</p>
+      </div>
+      <div class="split-layout compact-form">
+        <form id="price-form" class="form-card" autocomplete="off">
+          <input type="hidden" name="original_type">
+          <div class="form-heading"><div><h3 id="price-form-title">Novo valor</h3><p>Tipos disponíveis: 2D e 3D.</p></div></div>
+          <label>Formato da sala<select name="tipo_sala" required><option value="2D">2D</option><option value="3D">3D</option></select></label>
+          <label>Valor da inteira (R$)<input name="valor_ingresso" type="number" min="1" step="1" placeholder="40" required></label>
+          <div class="form-actions"><button class="button primary" type="submit">Salvar valor</button><button class="button ghost cancel-edit" type="button" hidden>Cancelar edição</button></div>
+        </form>
+        <div class="data-card"><div class="table-wrap"><table><thead><tr><th>Formato</th><th>Inteira</th><th>Meia</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="prices-list"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <section id="salas" class="page-section" aria-labelledby="rooms-title">
+      <div class="section-title"><div><p class="eyebrow">ESTRUTURA</p><h2 id="rooms-title">Salas</h2></div><p class="helper">Cadastre a capacidade e o formato de cada sala.</p></div>
+      <div class="split-layout">
+        <form id="room-form" class="form-card" autocomplete="off">
+          <input type="hidden" name="original_number">
+          <div class="form-heading"><div><h3 id="room-form-title">Nova sala</h3><p>O número identifica a sala no sistema.</p></div></div>
+          <div class="form-grid">
+            <label>Número da sala<input name="numero" type="number" min="1" step="1" placeholder="1" required></label>
+            <label>Capacidade<input name="capacidade" type="number" min="1" step="1" placeholder="100" required></label>
+          </div>
+          <label>Formato<select name="tipo_sala" required><option value="2D">2D</option><option value="3D">3D</option></select></label>
+          <div class="form-actions"><button class="button primary" type="submit">Salvar sala</button><button class="button ghost cancel-edit" type="button" hidden>Cancelar edição</button></div>
+        </form>
+        <div class="data-card"><div class="card-header"><div><h3>Salas cadastradas</h3><p id="rooms-count">0 salas</p></div></div><div class="table-wrap"><table><thead><tr><th>Sala</th><th>Formato</th><th>Capacidade</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="rooms-list"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <section id="filmes" class="page-section" aria-labelledby="movies-title">
+      <div class="section-title"><div><p class="eyebrow">CATÁLOGO</p><h2 id="movies-title">Filmes</h2></div><p class="helper">Gerencie os filmes exibidos na programação pública.</p></div>
+      <div class="split-layout">
+        <form id="movie-form" class="form-card" autocomplete="off">
+          <input type="hidden" name="codigo">
+          <div class="form-heading"><div><h3 id="movie-form-title">Novo filme</h3><p>Informe o período completo de exibição.</p></div></div>
+          <label>Nome do filme<input name="nome" type="text" maxlength="120" placeholder="Nome do filme" required></label>
+          <div class="form-grid">
+            <label>Data de estreia<input name="data_estreia" type="date" required></label>
+            <label>Data de saída<input name="data_saida" type="date" required></label>
+          </div>
+          <label>Duração (minutos)<input name="duracao" type="number" min="1" step="1" placeholder="120" required></label>
+          <label>URL do cartaz <span class="optional">opcional</span><input name="cartaz_url" type="url" placeholder="https://exemplo.com/cartaz.jpg"></label>
+          <div class="form-actions"><button class="button primary" type="submit">Salvar filme</button><button class="button ghost cancel-edit" type="button" hidden>Cancelar edição</button></div>
+        </form>
+        <div class="data-card"><div class="card-header"><div><h3>Filmes cadastrados</h3><p id="movies-count">0 filmes</p></div></div><div id="movies-list" class="entity-list"></div></div>
+      </div>
+    </section>
+
+    <section id="sessoes" class="page-section" aria-labelledby="sessions-title">
+      <div class="section-title"><div><p class="eyebrow">PROGRAMAÇÃO</p><h2 id="sessions-title">Sessões</h2></div><p class="helper">Associe um filme a uma sala, data e horário.</p></div>
+      <div class="split-layout">
+        <form id="session-form" class="form-card" autocomplete="off">
+          <input type="hidden" name="codigo">
+          <div class="form-heading"><div><h3 id="session-form-title">Nova sessão</h3><p>Sessões não podem compartilhar sala, data e horário.</p></div></div>
+          <label>Filme<select name="codigo_filme" required><option value="">Selecione um filme</option></select></label>
+          <label>Sala<select name="numero_sala" required><option value="">Selecione uma sala</option></select></label>
+          <div class="form-grid">
+            <label>Data<input name="data_sessao" type="date" required></label>
+            <label>Hora de início<input name="hora_inicio" type="number" min="0" max="23" step="1" placeholder="18" required></label>
+          </div>
+          <p class="warning-note edit-warning" hidden>Alterar uma sessão libera todos os assentos atualmente ocupados.</p>
+          <div class="form-actions"><button class="button primary" type="submit">Salvar sessão</button><button class="button ghost cancel-edit" type="button" hidden>Cancelar edição</button></div>
+        </form>
+        <div class="data-card"><div class="card-header"><div><h3>Próximas sessões</h3><p id="sessions-count">0 sessões</p></div></div><div class="table-wrap"><table><thead><tr><th>Filme</th><th>Quando</th><th>Sala</th><th>Ocupação</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="sessions-list"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <section id="ingressos" class="page-section" aria-labelledby="tickets-title">
+      <div class="section-title"><div><p class="eyebrow">BILHETERIA</p><h2 id="tickets-title">Ingressos e assentos</h2></div><p class="helper">Registre vendas ou cancele ingressos de uma sessão.</p></div>
+      <div class="ticket-layout">
+        <form id="ticket-form" class="form-card ticket-controls">
+          <label>Sessão<select name="codigo_sessao" required><option value="">Selecione uma sessão</option></select></label>
+          <fieldset class="segmented"><legend>Operação</legend><label><input type="radio" name="operation" value="buy" checked><span>Vender</span></label><label><input type="radio" name="operation" value="cancel"><span>Cancelar</span></label></fieldset>
+          <div class="ticket-summary"><span>Assentos selecionados</span><strong id="selected-seats">Nenhum</strong><span id="estimated-total">Selecione os lugares no mapa</span></div>
+          <div id="ticket-types" class="ticket-types"></div>
+          <button class="button primary full" type="submit" disabled>Confirmar venda</button>
+        </form>
+        <div class="seat-card">
+          <div class="seat-card-header"><div><h3>Mapa de assentos</h3><p id="seat-hint">Selecione uma sessão para visualizar a sala.</p></div><div class="legend"><span><i class="seat-demo free"></i>Livre</span><span><i class="seat-demo occupied"></i>Ocupado</span><span><i class="seat-demo selected"></i>Selecionado</span></div></div>
+          <div class="screen" aria-hidden="true">TELA</div>
+          <div id="seat-map" class="seat-map" aria-live="polite"><p class="empty-state">Nenhuma sessão selecionada.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <footer><span>CINEMA ADMINISTRAÇÃO</span><span>Acesso interno sem autenticação.</span></footer>
+  </main>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

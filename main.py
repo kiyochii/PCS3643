@@ -31,6 +31,11 @@ def read_root():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/admin")
+def read_admin():
+    return FileResponse(STATIC_DIR / "admin.html")
+
+
 @app.post("/persist")
 def persist_state():
     save_state()
