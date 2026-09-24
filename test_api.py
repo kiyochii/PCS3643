@@ -234,7 +234,7 @@ def mocked_requests_get(*args, **kwargs):
         }, 200)
 
     if args[0] == f'{BASE_URL}/':
-        return MockResponse(None, 307)
+        return MockResponse(None, 200)
 
     return MockResponse(None, 404)
 
@@ -502,7 +502,7 @@ class TestAplicacao(unittest.TestCase):
 
         status = api.acessar_raiz()
 
-        self.assertEqual(status, 307)
+        self.assertEqual(status, 200)
         mock_get.assert_called_once_with(f'{BASE_URL}/')
 
     @mock.patch('requests.post', side_effect=mocked_requests_post)
