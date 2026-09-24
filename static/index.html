@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Programação do cinema</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/" aria-label="Cinema, início"><span aria-hidden="true">◈</span> CINEMA</a><span class="header-note">A próxima história começa aqui.</span></header>
+  <main>
+    <div class="intro"><p class="eyebrow">LUZES, CÂMERA, SUA PRÓXIMA SESSÃO</p><h1>Programação do cinema<span>.</span></h1><p>Explore os filmes, confira os horários e encontre sua sessão.</p></div>
+    <form id="filters" class="filters" role="search">
+      <label class="search">Buscar filme<input id="search" type="search" placeholder="Qual história você quer assistir?"></label>
+      <label>Data da sessão<input id="date" type="date"></label>
+      <button type="reset" class="secondary">Limpar filtros</button>
+      <button type="button" id="reload">Atualizar</button>
+    </form>
+    <p id="status" role="status" aria-live="polite">Carregando a programação…</p>
+    <div class="layout">
+      <section aria-labelledby="movies-title"><div class="section-heading"><h2 id="movies-title">Filmes e sessões</h2><span id="count" class="muted"></span></div><div id="movies" aria-busy="true"></div></section>
+      <aside>
+        <section class="panel" aria-labelledby="rooms-title"><p class="eyebrow">A EXPERIÊNCIA</p><h2 id="rooms-title">Nossas salas</h2><div id="rooms"></div></section>
+        <section class="panel" aria-labelledby="tickets-title"><p class="eyebrow">PLANEJE SUA VISITA</p><h2 id="tickets-title">Tipos de ingresso</h2><div id="tickets"></div><p class="footnote">Valores por pessoa, de acordo com o formato da sala.</p></section>
+      </aside>
+    </div>
+  </main>
+  <footer>CINEMA <span>Filmes, horários e informações em um só lugar.</span></footer>
+</body>
+</html>

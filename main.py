@@ -1,5 +1,8 @@
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from pathlib import Path
+
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from controller import router
 from database import init_db, load_state, save_state
@@ -13,6 +16,8 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 app.include_router(router)
+STATIC_DIR = Path(__file__).with_name("static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.on_event("startup")
@@ -23,7 +28,7 @@ def startup_event():
 
 @app.get("/")
 def read_root():
-    return RedirectResponse(url="/docs")
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.post("/persist")
